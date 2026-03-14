@@ -1,5 +1,9 @@
 # privacy-guard-proxy
 
+[![Test](https://github.com/adrian-lorenz/privacy-guard-proxy/actions/workflows/test.yml/badge.svg)](https://github.com/adrian-lorenz/privacy-guard-proxy/actions/workflows/test.yml)
+[![Docker Hub](https://github.com/adrian-lorenz/privacy-guard-proxy/actions/workflows/dockerhub.yml/badge.svg)](https://github.com/adrian-lorenz/privacy-guard-proxy/actions/workflows/dockerhub.yml)
+[![Docker Image Version](https://img.shields.io/docker/v/adrianlorenz/privacy-guard-proxy?sort=semver&label=docker)](https://hub.docker.com/r/adrianlorenz/privacy-guard-proxy)
+
 `privacy-guard-proxy` is a local reverse proxy for [Claude Code](https://claude.ai/code) that masks sensitive data before it leaves your machine.
 
 Email addresses, names, IBANs, API keys, IDs, addresses, and other secrets are replaced with placeholders like `[EMAIL_1]` or `[IBAN_1]` on the way to the Anthropic API. Detection runs fully in-process. No external redaction service is involved.
