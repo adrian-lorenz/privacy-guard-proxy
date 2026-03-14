@@ -3,7 +3,7 @@ package detector
 import "regexp"
 
 var urlSecretRE = regexp.MustCompile(
-	`(?i)(?:token|api[_\-]?key|apikey|api[_\-]?token|access[_\-]?token|auth[_\-]?token|auth|secret|password|passwd|pwd|client[_\-]?secret|private[_\-]?key)=([^&\s"'<>\[\]{}]{6,})`,
+	`(?i)\b(?:token|api[_\-]?key|apikey|api[_\-]?token|access[_\-]?token|auth[_\-]?token|auth|secret|password|passwd|pwd|client[_\-]?secret|private[_\-]?key)=([^&\s"'<>\[\]{}]{6,})`,
 )
 
 func detectURLSecret(text string) []Finding {

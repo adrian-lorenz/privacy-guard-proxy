@@ -42,7 +42,7 @@ func mod97(s string) int {
 func detectIBAN(text string) []Finding {
 	var out []Finding
 	for _, loc := range ibanRE.FindAllStringIndex(text, -1) {
-		raw := text[loc[0]:loc[1]]
+		raw := strings.TrimRight(text[loc[0]:loc[1]], " ")
 		clean := strings.ToUpper(strings.ReplaceAll(raw, " ", ""))
 		expected, ok := ibanLengths[clean[:2]]
 		if !ok || len(clean) != expected {
@@ -54,7 +54,7 @@ func detectIBAN(text string) []Finding {
 			confidence = 0.6
 		}
 		out = append(out, Finding{
-			Type: PiiIBAN, Start: loc[0], End: loc[1],
+			Type: PiiIBAN, Start: loc[0], End: loc[0] + len(raw),
 			Text: raw, Confidence: confidence,
 		})
 	}
