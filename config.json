@@ -4,8 +4,6 @@
     "port": 9880,
     "upstream": "https://api.anthropic.com",
     "privacy_guard": {
-      "url": "http://localhost:8090",
-      "api_key": "pg_HzFt1_VE7BnZqQbrmHSTxDjqbhnFP-be9O6TBUajF2U",
       "detectors": ["SECRET"],
       "whitelist": ["claude", "anthropic"]
     }
