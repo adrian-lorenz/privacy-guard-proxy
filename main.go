@@ -19,31 +19,39 @@ func main() {
 		fmt.Sscan(os.Getenv("PRIVACY_GUARD_API_PORT"), apiPort)
 	}
 
-	cfgs, err := proxy.LoadConfigs("config.json")
+	root, err := proxy.LoadConfigs("config.json")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: failed to load config.json: %v\n", err)
 		os.Exit(1)
 	}
 
-	var wg sync.WaitGroup
-
-	if *apiPort > 0 {
-		fmt.Printf("[API]   privacy-guard API → 0.0.0.0:%d\n", *apiPort)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			api.Run(*apiPort)
-		}()
+	// api_port from config is used when not overridden by flag/env
+	if *apiPort == 0 && root.APIPort > 0 {
+		*apiPort = root.APIPort
 	}
 
-	for _, cfg := range cfgs {
+	const sep = "────────────────────────────────────────────────"
+	fmt.Println()
+	fmt.Println("  privacy-guard-proxy")
+	fmt.Println(" ", sep)
+	fmt.Println()
+
+	var wg sync.WaitGroup
+
+	for _, cfg := range root.Proxies {
 		upstreamBase := strings.TrimRight(cfg.Upstream, "/")
 		detectors := "all"
 		if len(cfg.PrivacyGuard.Detectors) > 0 {
-			detectors = strings.Join(cfg.PrivacyGuard.Detectors, ",")
+			detectors = strings.Join(cfg.PrivacyGuard.Detectors, ", ")
 		}
-		fmt.Printf("[:%d]  type → %s   upstream → %s   detectors → %s\n",
-			cfg.Port, cfg.Type, upstreamBase, detectors)
+		whitelist := "—"
+		if len(cfg.PrivacyGuard.Whitelist) > 0 {
+			whitelist = strings.Join(cfg.PrivacyGuard.Whitelist, ", ")
+		}
+		fmt.Printf("  proxy    :%d  %s  →  %s\n", cfg.Port, cfg.Type, upstreamBase)
+		fmt.Printf("           detectors : %s\n", detectors)
+		fmt.Printf("           whitelist : %s\n", whitelist)
+		fmt.Println()
 
 		wg.Add(1)
 		go func(cfg proxy.Config) {
@@ -52,12 +60,20 @@ func main() {
 		}(cfg)
 	}
 
-	fmt.Println()
-	for _, cfg := range cfgs {
-		fmt.Printf("  export ANTHROPIC_BASE_URL=http://127.0.0.1:%d\n", cfg.Port)
-	}
 	if *apiPort > 0 {
-		fmt.Printf("\n  API: curl -s http://localhost:%d/scan -d '{\"text\":\"foo@bar.com\"}' | jq\n", *apiPort)
+		fmt.Printf("  api      http://localhost:%d\n", *apiPort)
+		fmt.Printf("  ui       http://localhost:%d\n", *apiPort)
+		fmt.Println()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			api.Run(*apiPort, "config.json")
+		}()
+	}
+
+	fmt.Println(" ", sep)
+	for _, cfg := range root.Proxies {
+		fmt.Printf("  export ANTHROPIC_BASE_URL=http://127.0.0.1:%d\n", cfg.Port)
 	}
 	fmt.Println()
 

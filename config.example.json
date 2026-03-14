@@ -1,0 +1,22 @@
+{
+  "api_port": 9881,
+  "api_keys": [],
+  "default_detectors": [],
+  "default_whitelist": [],
+  "cors_origins": [],
+  "ui_password_hash": "",
+  "proxies": [
+    {
+      "type": "claude-code",
+      "port": 9880,
+      "upstream": "https://api.anthropic.com",
+      "privacy_guard": {
+        "url": "",
+        "api_key": null,
+        "detectors": [],
+        "whitelist": [],
+        "dry_run": false
+      }
+    }
+  ]
+}

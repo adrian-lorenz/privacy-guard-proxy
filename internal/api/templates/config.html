@@ -1,0 +1,184 @@
+{{define "config"}}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy Guard · Configuration</title>
+  {{template "head" .}}
+  {{template "styles" .}}
+  {{template "detscript" .}}
+</head>
+<body class="bg-body">
+
+{{template "navbar" .}}
+
+<div class="d-flex">
+  {{template "sidebar" .}}
+
+  <main class="flex-grow-1 p-4 overflow-auto" style="max-width:900px">
+
+    {{/* ── System Settings ── */}}
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">System Settings</div>
+      <div class="card-body">
+        <form hx-post="/ui/config" hx-target="#result-system" hx-swap="innerHTML">
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <label class="form-label small">
+                API Port <span class="text-secondary">(0 = disabled)</span>
+              </label>
+              <input type="number" class="form-control" name="api_port" value="{{.APIPort}}">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label small fw-semibold mb-0">
+                Default Detectors (API)
+                {{if .DefaultAllActive}}
+                <span class="badge text-bg-success ms-2">all active</span>
+                {{end}}
+              </label>
+              <div class="d-flex gap-1">
+                <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="allDet(this.closest('form'),true)">All on</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="allDet(this.closest('form'),false)">All off</button>
+              </div>
+            </div>
+            {{/* btn-check: input MUST be directly before label — no wrapper div */}}
+            <div class="d-flex flex-wrap gap-1">
+              {{range .DefaultDetectors}}<input type="checkbox" class="btn-check det-cb" autocomplete="off" id="ddet_{{.Name}}" name="default_det_{{.Name}}" {{if .Checked}}checked{{end}}><label class="btn btn-sm btn-outline-secondary font-monospace" for="ddet_{{.Name}}">{{.Name}}</label>
+              {{end}}
+            </div>
+            <div class="form-text">
+              Used when API requests don't specify detectors. All off = all 14 active.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">
+              Default Whitelist <span class="text-secondary fw-normal">(comma-separated)</span>
+            </label>
+            <input type="text" class="form-control" name="default_whitelist" value="{{.DefaultWhitelist}}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">
+              CORS Origins <span class="text-secondary fw-normal">(comma-separated, empty = CORS off, <code>*</code> = all)</span>
+            </label>
+            <input type="text" class="form-control" name="cors_origins" value="{{.CORSOrigins}}"
+              placeholder="https://myapp.example.com, http://localhost:3000">
+          </div>
+
+          <div class="d-flex align-items-center gap-3">
+            <button type="submit" class="btn btn-success btn-sm">
+              <i class="bi bi-floppy"></i> Save
+            </button>
+            <span id="result-system"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {{/* ── API Keys ── */}}
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span class="fw-semibold">API Keys</span>
+        <span class="badge text-bg-secondary">SHA-256 hashed</span>
+      </div>
+      <div class="card-body">
+        <div id="apikey-section">{{.APIKeysSection}}</div>
+      </div>
+    </div>
+
+    {{/* ── Proxy Instances ── */}}
+    {{range .Proxies}}
+    {{$idx := .Idx}}
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span class="fw-semibold">
+          Proxy #{{.Idx}}
+          {{if .Type}}<span class="text-secondary fw-normal">— {{.Type}}</span>{{end}}
+        </span>
+        {{if .CanDelete}}
+        <form method="POST" action="/ui/proxy/delete?idx={{.Idx}}" class="m-0">
+          <button type="submit" class="btn btn-sm btn-outline-danger"
+            onclick="return confirm('Delete Proxy #{{.Idx}}?')">
+            <i class="bi bi-trash"></i> Remove
+          </button>
+        </form>
+        {{end}}
+      </div>
+      <div class="card-body">
+        <form hx-post="/ui/config" hx-target="#result-{{.Idx}}" hx-swap="innerHTML">
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <label class="form-label small">Proxy Port</label>
+              <input type="number" class="form-control" name="port_{{$idx}}" value="{{.Port}}">
+            </div>
+            <div class="col-md-9">
+              <label class="form-label small">Upstream</label>
+              <input type="text" class="form-control" name="upstream_{{$idx}}" value="{{.Upstream}}">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label small fw-semibold mb-0">
+                Detectors
+                {{if .AllActive}}<span class="badge text-bg-success ms-2">all active</span>{{end}}
+              </label>
+              <div class="d-flex gap-1">
+                <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="allDet(this.closest('form'),true)">All on</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="allDet(this.closest('form'),false)">All off</button>
+              </div>
+            </div>
+            {{/* btn-check: input MUST be directly before label — no wrapper div */}}
+            <div class="d-flex flex-wrap gap-1">
+              {{range .Detectors}}<input type="checkbox" class="btn-check det-cb" autocomplete="off" id="det_{{.Name}}_{{$idx}}" name="det_{{.Name}}_{{$idx}}" {{if .Checked}}checked{{end}}><label class="btn btn-sm btn-outline-primary font-monospace" for="det_{{.Name}}_{{$idx}}">{{.Name}}</label>
+              {{end}}
+            </div>
+            <div class="form-text">All off = all 14 detectors active</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small">
+              Whitelist <span class="text-secondary">(comma-separated)</span>
+            </label>
+            <textarea class="form-control" name="whitelist_{{$idx}}" rows="2">{{.Whitelist}}</textarea>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" role="switch" id="dryrun_{{$idx}}" name="dry_run_{{$idx}}" {{if .DryRun}}checked{{end}}>
+            <label class="form-check-label small" for="dryrun_{{$idx}}">
+              Dry run (nur erkennen/loggen, Body unverändert weiterleiten)
+            </label>
+          </div>
+
+          <div class="d-flex align-items-center gap-3">
+            <button type="submit" class="btn btn-success btn-sm">
+              <i class="bi bi-floppy"></i> Save
+            </button>
+            <span id="result-{{.Idx}}"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+    {{end}}
+
+    <form method="POST" action="/ui/proxy/add">
+      <button type="submit" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-plus-lg"></i> Add Proxy
+      </button>
+    </form>
+
+  </main>
+</div>
+</body>
+</html>
+{{end}}

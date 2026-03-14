@@ -86,6 +86,12 @@ func (s *Scanner) isEnabled(t PiiType) bool {
 // Scan returns the anonymised text and the individual findings.
 // Findings are sorted by start position (ascending) in the returned slice.
 func (s *Scanner) Scan(text string) (string, []Finding) {
+	return s.ScanWithWhitelist(text, nil)
+}
+
+// ScanWithWhitelist behaves like Scan, but suppresses findings whose matched
+// text contains any whitelist token (case-insensitive).
+func (s *Scanner) ScanWithWhitelist(text string, whitelist []string) (string, []Finding) {
 	type entry struct {
 		t  PiiType
 		fn func(string) []Finding
@@ -113,6 +119,11 @@ func (s *Scanner) Scan(text string) (string, []Finding) {
 			all = append(all, d.fn(text)...)
 		}
 	}
+	if len(all) == 0 {
+		return text, nil
+	}
+
+	all = filterWhitelisted(all, whitelist)
 	if len(all) == 0 {
 		return text, nil
 	}
@@ -148,6 +159,34 @@ func (s *Scanner) Scan(text string) (string, []Finding) {
 	return string(result), resolved
 }
 
+func filterWhitelisted(findings []Finding, whitelist []string) []Finding {
+	tokens := make([]string, 0, len(whitelist))
+	for _, w := range whitelist {
+		w = strings.TrimSpace(strings.ToLower(w))
+		if w != "" {
+			tokens = append(tokens, w)
+		}
+	}
+	if len(tokens) == 0 {
+		return findings
+	}
+	filtered := make([]Finding, 0, len(findings))
+	for _, f := range findings {
+		txt := strings.ToLower(f.Text)
+		skip := false
+		for _, t := range tokens {
+			if strings.Contains(txt, t) {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			filtered = append(filtered, f)
+		}
+	}
+	return filtered
+}
+
 // resolveOverlaps keeps the highest-priority non-overlapping finding at each position.
 func resolveOverlaps(findings []Finding) []Finding {
 	sort.SliceStable(findings, func(i, j int) bool {
@@ -167,6 +206,14 @@ func resolveOverlaps(findings []Finding) []Finding {
 		if f.Start >= lastEnd {
 			result = append(result, f)
 			lastEnd = f.End
+		} else if len(result) > 0 {
+			// Overlap: replace previous finding if current has higher priority or is longer at same priority.
+			prev := result[len(result)-1]
+			pi, pj := piiPriority[prev.Type], piiPriority[f.Type]
+			if pj > pi || (pj == pi && (f.End-f.Start) > (prev.End-prev.Start)) {
+				result[len(result)-1] = f
+				lastEnd = f.End
+			}
 		}
 	}
 	return result

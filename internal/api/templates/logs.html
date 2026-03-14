@@ -1,0 +1,91 @@
+{{define "logs"}}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy Guard · Logs</title>
+  {{template "head" .}}
+  {{template "styles" .}}
+  <style>
+    #log-box {
+      height: calc(100vh - 230px);
+      overflow-y: auto;
+      background: #0d1117;
+      border-radius: .375rem;
+      padding: .75rem 1rem;
+      font-family: monospace;
+      font-size: .8rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body class="bg-body">
+
+{{template "navbar" .}}
+
+<div class="d-flex">
+  {{template "sidebar" .}}
+
+  <main class="flex-grow-1 p-4 overflow-auto">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+          <span class="fw-semibold">Live Log</span>
+          {{if gt (len .Ports) 1}}
+          <div class="btn-group btn-group-sm">
+            {{range .Ports}}<a href="/logs?port={{.}}"
+              class="btn btn-outline-secondary{{if eq . $.ActivePort}} active{{end}}">:{{.}}</a>{{end}}
+          </div>
+          {{end}}
+        </div>
+        <span class="text-success small htmx-indicator align-items-center gap-1">
+          <span class="spinner-grow spinner-grow-sm"></span> live
+        </span>
+      </div>
+      <div class="card-body p-0">
+        <div id="log-box"
+          data-tail-url="/ui/logs/tail?port={{.ActivePort}}">{{if .InitialLog}}{{.InitialLog}}{{else}}<span class="text-secondary">No log entries (Port: {{.ActivePort}})</span>{{end}}</div>
+      </div>
+      <div class="card-footer text-secondary small">
+        Every 2 seconds · Max 10 MB / file · No content, no PII values
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  (function() {
+    const box = document.getElementById('log-box');
+    const indicator = document.querySelector('.htmx-indicator');
+    if (!box) return;
+    const url = box.getAttribute('data-tail-url');
+    if (!url) return;
+
+    async function refresh() {
+      try {
+        if (indicator) indicator.style.display = 'inline-flex';
+        const res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+        if (res.redirected) {
+          window.location.href = res.url;
+          return;
+        }
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        box.innerHTML = await res.text();
+        box.scrollTop = box.scrollHeight;
+      } catch (_) {
+      } finally {
+        if (indicator) indicator.style.display = '';
+      }
+    }
+
+    refresh();
+    window.setInterval(refresh, 2000);
+  })();
+</script>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,53 @@
+{{define "head"}}
+<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="/static/vendor/bootstrap-icons/font/bootstrap-icons.css">
+<script src="/static/vendor/htmx/htmx.min.js"></script>
+<script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+{{end}}
+
+{{define "styles"}}
+<style>
+  .sidebar { width: 220px; min-height: calc(100vh - 56px); }
+  .htmx-indicator { display: none; }
+  .htmx-request .htmx-indicator { display: inline-flex; }
+</style>
+{{end}}
+
+{{define "detscript"}}
+<script>
+  function allDet(form, on) {
+    form.querySelectorAll('.det-cb').forEach(cb => cb.checked = on);
+  }
+</script>
+{{end}}
+
+{{define "navbar"}}
+<nav class="navbar bg-body-tertiary border-bottom px-3">
+  <span class="navbar-brand mb-0 h6">🛡 Privacy Guard Proxy</span>
+  <a href="/logout" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-box-arrow-right"></i> Sign out
+  </a>
+</nav>
+{{end}}
+
+{{define "sidebar"}}
+<div class="sidebar bg-body-tertiary border-end p-3 flex-shrink-0">
+  <ul class="nav nav-pills flex-column gap-1">
+    <li class="nav-item">
+      <a href="/" class="nav-link {{if eq .ActivePage "/"}}active{{else}}text-body-secondary{{end}}">
+        <i class="bi bi-gear me-2"></i>Configuration
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="/test" class="nav-link {{if eq .ActivePage "/test"}}active{{else}}text-body-secondary{{end}}">
+        <i class="bi bi-search me-2"></i>Test Detectors
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="/logs" class="nav-link {{if eq .ActivePage "/logs"}}active{{else}}text-body-secondary{{end}}">
+        <i class="bi bi-file-text me-2"></i>Logs
+      </a>
+    </li>
+  </ul>
+</div>
+{{end}}

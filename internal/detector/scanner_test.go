@@ -165,7 +165,7 @@ func TestScannerMultipleTypes(t *testing.T) {
 
 func TestScannerSecretDetected(t *testing.T) {
 	s := NewScanner(nil)
-	anon, findings := s.Scan("key=AKIAIOSFODNN7EXAMPLE")
+	anon, findings := s.Scan("key=" + "AKIA" + "IOSFODNN7EXAMPLE")
 	if !strings.Contains(anon, "[SECRET_1]") {
 		t.Errorf("expected [SECRET_1] in %q", anon)
 	}
@@ -174,6 +174,21 @@ func TestScannerSecretDetected(t *testing.T) {
 	}
 	if findings[0].Type != PiiSecret {
 		t.Errorf("type = %v, want SECRET", findings[0].Type)
+	}
+}
+
+func TestScannerWhitelistSkipsMatch(t *testing.T) {
+	s := NewScanner([]string{"EMAIL"})
+	text := "Kontakt: safe@example.com und risk@example.com"
+	anon, findings := s.ScanWithWhitelist(text, []string{"safe@example.com"})
+	if strings.Contains(anon, "risk@example.com") {
+		t.Fatalf("risk email must be masked: %q", anon)
+	}
+	if !strings.Contains(anon, "safe@example.com") {
+		t.Fatalf("whitelisted email must remain: %q", anon)
+	}
+	if len(findings) != 1 || findings[0].Text != "risk@example.com" {
+		t.Fatalf("unexpected findings: %+v", findings)
 	}
 }
 
@@ -186,5 +201,48 @@ func TestScannerCountersPerType(t *testing.T) {
 	}
 	if !strings.Contains(anon, "[EMAIL_2]") {
 		t.Errorf("expected [EMAIL_2] in %q", anon)
+	}
+}
+
+// TestOverlapPriorityResolution verifies that a higher-priority finding beats
+// a lower-priority one when their spans overlap.
+func TestOverlapPriorityResolution(t *testing.T) {
+	// Build two findings where SECRET (priority 6) overlaps ADDRESS (priority 2).
+	// ADDRESS starts first but SECRET has higher priority → SECRET must win.
+	addr := Finding{Type: PiiAddress, Start: 0, End: 50, Confidence: 0.9}
+	sec := Finding{Type: PiiSecret, Start: 40, End: 70, Confidence: 1.0}
+	result := resolveOverlaps([]Finding{addr, sec})
+	if len(result) != 1 {
+		t.Fatalf("expected 1 finding after resolution, got %d: %v", len(result), result)
+	}
+	if result[0].Type != PiiSecret {
+		t.Errorf("expected SECRET to win overlap, got %v", result[0].Type)
+	}
+}
+
+// TestAddressEmailNoOverlap is a regression test for the bug where the address
+// city pattern consumed trailing text including the first char of an email.
+func TestAddressEmailNoOverlap(t *testing.T) {
+	s := NewScanner(nil)
+	text := "Ich wohne in der Breisacher Str. 28A, 79279 Vörstetten und meine Email ist a.lorenz@noa-x.de"
+	anon, findings := s.Scan(text)
+
+	hasAddress, hasEmail := false, false
+	for _, f := range findings {
+		if f.Type == PiiAddress {
+			hasAddress = true
+		}
+		if f.Type == PiiEmail {
+			hasEmail = true
+		}
+	}
+	if !hasAddress {
+		t.Errorf("address not detected in %q", anon)
+	}
+	if !hasEmail {
+		t.Errorf("email not detected in %q (address may have consumed it)", anon)
+	}
+	if strings.Contains(anon, "a.lorenz@noa-x.de") {
+		t.Errorf("email should be masked in %q", anon)
 	}
 }

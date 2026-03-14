@@ -1,0 +1,32 @@
+{{define "login"}}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy Guard · Login</title>
+  {{template "head" .}}
+</head>
+<body class="d-flex align-items-center justify-content-center min-vh-100 bg-body">
+<div class="card shadow" style="width:360px">
+  <div class="card-body p-4">
+    <h5 class="card-title text-center mb-4">🛡 Privacy Guard Proxy</h5>
+    {{if .Error}}
+    <div class="alert alert-danger py-2">{{.Error}}</div>
+    {{end}}
+    <form method="POST" action="/login">
+      <div class="mb-3">
+        <label class="form-label small">Username</label>
+        <input type="text" class="form-control" name="username" autofocus autocomplete="username">
+      </div>
+      <div class="mb-4">
+        <label class="form-label small">Password</label>
+        <input type="password" class="form-control" name="password" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-success w-100">Sign in</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>
+{{end}}

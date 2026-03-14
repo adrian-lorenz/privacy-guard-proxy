@@ -1,0 +1,82 @@
+{{define "test"}}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy Guard · Test Detectors</title>
+  {{template "head" .}}
+  {{template "styles" .}}
+  {{template "detscript" .}}
+</head>
+<body class="bg-body">
+
+{{template "navbar" .}}
+
+<div class="d-flex">
+  {{template "sidebar" .}}
+
+  <main class="flex-grow-1 p-4 overflow-auto">
+    <div class="row g-4">
+
+      <div class="col-lg-5">
+        <div class="card">
+          <div class="card-header fw-semibold">Input</div>
+          <div class="card-body">
+            <form hx-post="/ui/scan" hx-target="#scan-result" hx-swap="innerHTML">
+
+              <div class="mb-3">
+                <label class="form-label small">Text</label>
+                <textarea class="form-control font-monospace" name="text" rows="7"
+                  placeholder="Enter text with PII…" autofocus></textarea>
+              </div>
+
+              <div class="mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <label class="form-label small fw-semibold mb-0">Detectors</label>
+                  <div class="d-flex gap-1">
+                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                      onclick="allDet(this.closest('form'),true)">All on</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                      onclick="allDet(this.closest('form'),false)">All off</button>
+                  </div>
+                </div>
+                {{/* btn-check: input MUST be directly before label — no wrapper div */}}
+                <div class="d-flex flex-wrap gap-1">
+                  {{range .Detectors}}<input type="checkbox" class="btn-check det-cb" autocomplete="off" id="tdet_{{.}}" name="det_{{.}}" checked><label class="btn btn-sm btn-outline-primary font-monospace" for="tdet_{{.}}">{{.}}</label>
+                  {{end}}
+                </div>
+                <div class="form-text mt-1">All off = all active</div>
+              </div>
+
+              <div class="d-flex align-items-center gap-3">
+                <button type="submit" class="btn btn-success btn-sm">
+                  <i class="bi bi-search"></i> Scan
+                </button>
+                <span class="htmx-indicator text-secondary small align-items-center gap-1">
+                  <span class="spinner-border spinner-border-sm"></span> Scanning…
+                </span>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card h-100">
+          <div class="card-header fw-semibold">Result</div>
+          <div class="card-body">
+            <div id="scan-result">
+              <p class="text-secondary small mb-0">No scan results yet.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>
+{{end}}
